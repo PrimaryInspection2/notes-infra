@@ -29,18 +29,18 @@ spec:
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
-                  name: notes-service-config
+                  name: postgres-config
                   key: POSTGRES_DB
             # sensitive credentials from Secret
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: notes-service-secret
+                  name: postgres-secret
                   key: DATASOURCE_USERNAME
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: notes-service-secret
+                  name: postgres-secret
                   key: DATASOURCE_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata #fix for GCE postgres deployment

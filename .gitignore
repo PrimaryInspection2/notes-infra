@@ -215,3 +215,4 @@ $RECYCLE.BIN/
 /k8s/notes-service-secret.yaml
 /k8s/deploy-bff-notes.sh
 /k8s/deploy-infra.sh
+/k8s/postgres/notes-app-postgres-secret.yaml
