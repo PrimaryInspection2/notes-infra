@@ -44,20 +44,38 @@ spec:
                   key: DATASOURCE_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata #fix for GCE postgres deployment
-          # liveness probe — checks if postgres is accepting connections
+          # startup probe — waits for postgres to initialize before enabling liveness/readiness
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pg_isready -U $POSTGRES_USER"  # checks if postgres process is accepting connections (no db check yet)
+            failureThreshold: 30  # allow up to 300s for initialization (30 * 10s)
+            periodSeconds: 10     # check every 10 seconds
+            timeoutSeconds: 5     # fail if no response within 5 seconds
+
+          # liveness probe — restarts container if postgres process is dead; only runs after startupProbe passes
           livenessProbe:
             exec:
               command:
                 - sh
                 - -c
-                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"
+                - "pg_isready -U $POSTGRES_USER"  # checks only if process is alive, not if specific db is ready
+            periodSeconds: 30     # check every 30 seconds (less frequent — just detects crashed process)
+            timeoutSeconds: 5     # fail if no response within 5 seconds
+            failureThreshold: 5   # more lenient — postgres may be slow under load
 
+          # readiness probe — removes pod from service if postgres is not ready to serve traffic
           readinessProbe:
             exec:
               command:
                 - sh
                 - -c
-                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"
+                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"  # checks if specific database is ready to accept connections
+            periodSeconds: 10     # check every 10 seconds (more frequent — affects live traffic)
+            timeoutSeconds: 3     # stricter timeout — unresponsive db should stop receiving traffic quickly
+            failureThreshold: 3   # remove from service after 3 consecutive failures (3 * 10s = 30s)
           resources:
             requests:
               memory: "256Mi"
