@@ -1,0 +1,10 @@
+# notes-app-postgres-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.postgres.name }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra.postgres.labels" . | nindent 4 }}
+data:
+  POSTGRES_DB: {{ .Values.postgres.configMap.dbName | quote}}

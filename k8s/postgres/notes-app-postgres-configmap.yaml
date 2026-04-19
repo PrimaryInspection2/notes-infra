@@ -1,8 +1,0 @@
-# notes-app-postgres-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-config
-  namespace: notes-app
-data:
-  POSTGRES_DB: "notes-service"

@@ -1,49 +1,48 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: notes-app
-  name: postgres
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.postgres.name }}-deployment
+  # Labels on the Deployment object itself — pure metadata for humans and tooling.
+  # Used by: kubectl get deploy -l app.kubernetes.io/name=postgres
+  # NOT used by Kubernetes to route traffic or manage pods.
   labels:
-    app: postgres
+    {{- include "infra.postgres.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.postgres.replicas }}
   # Recreate = stop old pod before starting new one
   # important for stateful apps with PVC (only one pod can write at a time)
   strategy:
     type: Recreate
+  # Deployment uses this to find and manage its pods.
+  # IMMUTABLE after first deploy — Kubernetes rejects changes to this field.
+  # Must be a subset of template.metadata.labels below.
   selector:
     matchLabels:
-      app: postgres
+      {{- include "infra.postgres.selectorLabels" . | nindent 6 }}
   template:
+    # Labels stamped on every pod created by this Deployment.
+    # Must include everything from selector.matchLabels — otherwise
+    # the Deployment can't find its own pods and will fail.
+    # Can have extra labels (e.g. version) that selector doesn't use.
     metadata:
       labels:
-        app: postgres
+        {{- include "infra.postgres.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: postgres
-          image: postgres:17-alpine
+        - name: {{ .Values.postgres.name }}
+          image: {{ .Values.postgres.image.repository}}:{{ .Values.postgres.image.tag}}
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
           ports:
             - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.postgres.name }}-config
+            - secretRef:
+                name: {{ .Values.postgres.name }}-secret
           env:
-            # non-sensitive config from ConfigMap
-            - name: POSTGRES_DB
-              valueFrom:
-                configMapKeyRef:
-                  name: postgres-config
-                  key: POSTGRES_DB
-            # sensitive credentials from Secret
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: DATASOURCE_USERNAME
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: DATASOURCE_PASSWORD
             - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata #fix for GCE postgres deployment
+              value: /var/lib/postgresql/data/pgdata
           # startup probe — waits for postgres to initialize before enabling liveness/readiness
           startupProbe:
             exec:
@@ -78,16 +77,16 @@ spec:
             failureThreshold: 3   # remove from service after 3 consecutive failures (3 * 10s = 30s)
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: {{ .Values.postgres.resources.requests.memory | quote}}
+              cpu: {{ .Values.postgres.resources.requests.cpu | quote}}
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: {{ .Values.postgres.resources.limits.memory | quote}}
+              cpu: {{ .Values.postgres.resources.limits.cpu | quote}}
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-              name: postgres-data
+              name: {{ .Values.postgres.name}}-data
       volumes:
-        - name: postgres-data
+        - name: {{ .Values.postgres.name}}-data
           persistentVolumeClaim:
-            claimName: postgres-data
+            claimName: {{ .Values.postgres.name}}-data
       restartPolicy: Always

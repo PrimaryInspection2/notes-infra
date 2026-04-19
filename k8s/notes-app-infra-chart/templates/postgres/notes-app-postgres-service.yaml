@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: notes-app
-  name: postgres-service
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.postgres.name }}-service
   labels:
-    app: postgres
+    {{- include "infra.postgres.labels" . | nindent 4 }}
 spec:
   # ClusterIP = internal only, postgres must not be exposed externally
   type: ClusterIP
   selector:
-    app: postgres
+    {{- include "infra.postgres.selectorLabels" . | nindent 4 }}
   ports:
     - name: postgres
       port: 5432

@@ -1,0 +1,31 @@
+# zipkin-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.zipkin.name }}-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra.zipkin.labels" . | nindent 4}}
+spec:
+  replicas: {{ .Values.zipkin.replicas }}
+  selector:
+    matchLabels:
+      {{- include "infra.zipkin.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      labels:
+        {{- include "infra.zipkin.selectorLabels" . | nindent 8}}
+    spec:
+      containers:
+        - name: {{ .Values.zipkin.name }}
+          image: {{ .Values.zipkin.image.repository}}:{{ .Values.zipkin.image.tag}}
+          imagePullPolicy: {{ .Values.zipkin.image.pullPolicy }}
+          ports:
+            - containerPort: 9411
+          resources:
+            requests:
+              memory: {{ .Values.zipkin.resources.requests.memory | quote}}
+              cpu: {{ .Values.zipkin.resources.requests.cpu | quote}}
+            limits:
+              memory: {{ .Values.zipkin.resources.limits.memory | quote}}
+              cpu: {{ .Values.zipkin.resources.limits.cpu | quote}}

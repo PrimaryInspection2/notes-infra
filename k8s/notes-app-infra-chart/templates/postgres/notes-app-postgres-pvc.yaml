@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  namespace: notes-app
-  name: postgres-data
+  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.postgres.name}}-data
   labels:
-    app: postgres
+    {{- include "infra.postgres.labels" . | nindent 4 }}
 spec:
   accessModes:
     # ReadWriteOnce = only one node can mount this volume at a time
@@ -13,4 +13,4 @@ spec:
   resources:
     requests:
       # increase this for production
-      storage: 1Gi
+      storage: {{ .Values.postgres.storage.size | quote }}

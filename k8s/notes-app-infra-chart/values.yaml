@@ -1,0 +1,49 @@
+# Default values for notes-app-infra-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+postgres:
+  name: postgres
+  image:
+    repository: postgres
+    tag: 17-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  configMap:
+    dbName: notes-service
+  storage:
+    size: 1Gi
+  replicas: 1
+
+zipkin:
+  name: zipkin
+  image:
+    repository: openzipkin/zipkin
+    tag: 3
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 250m
+  replicas: 1
+
+
+ingress:
+  name: bff-notes-main-ingress
+  className: nginx
+  path: /bff-notes/
+  healthcheck:
+    path: /actuator/health
+    port: "9192"
+  service:
+    name: bff-notes
+    port: 9004
